@@ -1,5 +1,6 @@
 package com.appmea.connectbutton
 
+import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
@@ -9,6 +10,7 @@ import android.text.StaticLayout
 import android.text.TextPaint
 import android.util.AttributeSet
 import android.view.View
+import android.view.animation.LinearInterpolator
 import kotlin.math.ceil
 
 
@@ -25,7 +27,7 @@ class ConnectButton @JvmOverloads constructor(context: Context, attrs: Attribute
     private val minPaddingVertical = 0.dpAsPx
     private val textConnect = context.getString(R.string.text_connect)
     val paintText = TextPaint().apply {
-        color = Color.BLACK
+        color = Color.DKGRAY
         isAntiAlias = true
         textAlignment = TEXT_ALIGNMENT_CENTER
         textSize = 16.spAsPxFloat
@@ -39,6 +41,18 @@ class ConnectButton @JvmOverloads constructor(context: Context, attrs: Attribute
     private var textWidth = ceil(paintText.measureText(textConnect)).toInt()
     private var textHeight = ceil(measureMaxTextHeight(paintText)).toInt()
     private var deltaY: Float = 0f
+
+
+    /*
+     * TextView
+     */
+    private var visibilityTextView = true
+    private var currentAlpha = 100
+        set(value) {
+            field = value
+            paintText.alpha = value
+            invalidate()
+        }
 
 
     init {
@@ -66,6 +80,9 @@ class ConnectButton @JvmOverloads constructor(context: Context, attrs: Attribute
 
 
     override fun onDraw(canvas: Canvas) {
+        updateVisibilityState()
+        updateClickableState()
+
         canvas.save()
         canvas.translate(paddingLeft.toFloat(), paddingTop.toFloat() + deltaY)
         staticLayout.draw(canvas)
@@ -81,5 +98,37 @@ class ConnectButton @JvmOverloads constructor(context: Context, attrs: Attribute
 
     private fun newStaticLayout(width: Int): StaticLayout {
         return StaticLayout(textConnect, paintText, width, Layout.Alignment.ALIGN_CENTER, 1.0f, 0f, true)
+    }
+
+    private fun updateVisibilityState() {
+        visibilityTextView = currentAlpha == 100
+    }
+
+    private fun updateClickableState() {
+        isClickable = currentAlpha == 0 || currentAlpha == 100
+    }
+
+    fun toggleFade() {
+        if (isClickable.not()) {
+            return
+        }
+
+        if (visibilityTextView) {
+            ValueAnimator.ofInt(100, 0).apply {
+                duration = 3000
+                interpolator = LinearInterpolator()
+                addUpdateListener { valueAnimator ->
+                    currentAlpha = valueAnimator.animatedValue as Int
+                }
+            }.start()
+        }else{
+            ValueAnimator.ofInt(0, 100).apply {
+                duration = 3000
+                interpolator = LinearInterpolator()
+                addUpdateListener { valueAnimator ->
+                    currentAlpha = valueAnimator.animatedValue as Int
+                }
+            }.start()
+        }
     }
 }
